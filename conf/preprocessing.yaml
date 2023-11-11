@@ -1,0 +1,12 @@
+patching:
+  dir_svs: /home/tcga_nsclc/
+  preprocessing_savedir: data/
+  step_size: 256
+  patch_size: 256
+  desired_mag: 20
+  preset: tcga.csv
+  use_simple_seg: False
+
+features:
+  batch_size:  512
+  feat_dir: data/features/

@@ -1,0 +1,41 @@
+defaults:
+  - defaults
+  - model_dict@model_dict
+  - _self_ 
+
+task: task_2_tumor_subtyping
+exp_name: debug
+
+model_type: RoPEAMIL_pixel
+
+label_frac: 100
+
+split: test
+
+results_dir: ${hydra:runtime.cwd}/data/results/${task}/${exp_name}/label_frac=${label_frac}/${model_type}/eval/${now:%Y-%m-%d}_${now:%H-%M-%S}
+
+load_model_from_mlflow: True
+
+ckpt_path: 
+mlflow:
+  run_id: 
+
+lightning_module:
+  _target_: romil.models.lightning_modules.MILLitModule
+  
+  model: ${model_dict.${model_type}}
+
+  loss :
+    _target_: torch.nn.CrossEntropyLoss
+
+  optimizer: 
+  use_instance_loss: False
+
+  bag_loss_weight: 0.7
+  
+k_folds:
+  k_start: 0
+  k_end: 10
+
+
+multiclass_avg: "weighted"

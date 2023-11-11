@@ -1,0 +1,22 @@
+defaults:
+  - defaults
+  - _self_
+  
+results_dir: ${split_dir}
+task: task_2_tumor_subtyping
+
+k_folds: 10
+# no more test frac, now depends on the k_folds
+val_frac: 0.1 # as a fraction of the training set, not all the dataset 
+
+label_frac: 
+  - 0.1
+  - 0.25
+  - 0.5
+  - 0.75
+  - 1
+
+csv_path: ${features_dir}/slides.csv
+shuffle: False
+stratify: True # whether or not to stratify the data, with respect to the label, between the test set and the train+val set
+seed: 1

@@ -1,0 +1,142 @@
+model_name: ???
+lightning_module:
+    _target_: romil.models.lightning_modules.MILLitModule
+
+    optimizer:
+      _target_: torch.optim.Adam
+      _partial_: True
+      lr: 0.0001
+      weight_decay: 0.00001
+
+    loss :
+      _target_: torch.nn.CrossEntropyLoss
+
+    model: ${model_dict.${model_name}}
+
+    use_instance_loss: True
+    bag_loss_weight: 0.7
+    k_sample: 8
+    subtyping: True
+    instance_loss_fn:
+        _target_: torch.nn.CrossEntropyLoss
+      
+model_dict:
+  clam_sb: 
+    _target_: romil.models.model_clam.CLAM_SB
+    n_classes: 2
+    input_dim: 128
+    hidden_dim: 512
+    dropout: 0.25
+    instance_classifiers: ${lightning_module.use_instance_loss}
+    attention_net:
+      _target_: romil.models.model_clam.Attn_Net_Gated
+      hidden_dim: ${..hidden_dim}
+      attention_dim: 256
+      dropout: ${..dropout}
+      n_classes: 1
+
+
+
+  clam_mb: 
+    _target_: romil.models.model_clam.CLAM_MB
+    n_classes: 2
+    input_dim: 128
+    hidden_dim: 512
+    dropout: 0.25
+    instance_classifiers: ${lightning_module.use_instance_loss}
+    attention_net:
+      _target_: romil.models.model_clam.Attn_Net_Gated
+      hidden_dim: ${..hidden_dim}
+      attention_dim: 256
+      dropout: ${..dropout}
+      n_classes: ${..n_classes}
+
+
+  RoPEAMIL_sb:
+    _target_: romil.models.RoMIL.RoPEAMIL
+    input_dim: 128
+    hidden_dim: 64
+    absolute_position_embeddings: False
+    positional_encoder: 
+      _target_: romil.models.position_embedding_modules.RoFormerEncoder
+      n_attention_block: 1
+      n_embd: ${..hidden_dim}
+      n_head: 8
+      dropout: 0.25
+      bias: True
+      rope: False
+      rope_freqs: pixel
+      resid_dropout: 0.25
+    mil_head: 
+      _target_: romil.models.ABMIL_heads.ABMIL_SB
+      n_classes: 2
+      input_dim: ${..hidden_dim}
+      hidden_dim: 512
+      dropout: 0.25
+      instance_classifiers: None
+      attention_net:
+        _target_: romil.models.attention.ClassAttention
+        hidden_dim: ${..hidden_dim}
+        attention_dim: 256
+        dropout: ${..dropout}
+        n_classes: 1
+        n_head: 8
+        bias: True
+
+  RoPEAMIL_mb:
+    _target_: romil.models.RoMIL.RoPEAMIL
+    input_dim: 128
+    hidden_dim: 64
+    absolute_position_embeddings: False
+    positional_encoder: 
+      _target_: romil.models.position_embedding_modules.RoFormerEncoder
+      n_attention_block: 1
+      n_embd: ${..hidden_dim}
+      n_head: 8
+      dropout: 0.25
+      bias: True
+      rope: False
+      rope_freqs: pixel
+      resid_dropout: 0.25
+    mil_head: 
+      _target_: romil.models.ABMIL_heads.ABMIL_MB
+      n_classes: 2
+      input_dim: ${..hidden_dim}
+      hidden_dim: 512
+      dropout: 0.25
+      instance_classifiers: False
+      attention_net:
+        _target_: romil.models.attention.ClassAttention
+        hidden_dim: ${..hidden_dim}
+        attention_dim: 256
+        dropout: ${..dropout}
+        n_classes: ${..n_classes}
+        n_head: 8
+        bias: True
+
+  RoPEDSMIL:
+    _target_: romil.models.RoMIL.RoPEDSMIL
+    input_dim: 128
+    hidden_dim: 64
+    absolute_position_embeddings: False
+    positional_encoder: 
+      _target_: romil.models.position_embedding_modules.RoFormerEncoder
+      n_attention_block: 1
+      n_embd: ${..hidden_dim}
+      n_head: 8
+      dropout: 0.25
+      bias: True
+      rope: False
+      rope_freqs: pixel
+      resid_dropout: 0.25
+    mil_head: 
+      _target_: romil.models.dsmil.MILNet
+      n_classes: 2
+      patch_classifier:
+        _target_: romil.models.dsmil.FCLayer
+        in_size: ${...hidden_dim}
+        out_size: ${..n_classes}
+      attention_net:
+        _target_: romil.models.dsmil.BClassifier
+        input_size: ${...hidden_dim}
+        n_classes: ${..n_classes}

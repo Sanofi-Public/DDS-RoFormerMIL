@@ -1,0 +1,17 @@
+[tool.black]
+experimental_string_processing = true
+
+[tool.pylint.MASTER]
+generated-members = ["numpy.*", "torch.*"]
+disable = ["C0411"]
+
+[tool.isort]
+profile = "black"
+skip_glob = ["third_party/*"]
+
+[tool.mypy]
+ignore_missing_imports = true
+disallow_untyped_defs = true
+namespace_packages = false
+disable_error_code = "operator"
+exclude = "tests*"

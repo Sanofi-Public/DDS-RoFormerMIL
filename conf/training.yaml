@@ -1,0 +1,107 @@
+defaults:
+  - defaults
+  - model_dict@model_dict
+  - _self_ 
+
+task: task_2_tumor_subtyping
+exp_name: debug
+model_type: RoPEAMIL_pixel # Should be one of the models from confs/model_dict.yaml
+label_frac: 100 # % of training data to use during training 
+
+results_dir: ${hydra:runtime.cwd}/data/results/${task}/${exp_name}/label_frac=${label_frac}/${model_type}/training/${now:%Y-%m-%d}_${now:%H-%M-%S}
+
+
+training_args:
+  lightning_module:
+    _target_: romil.models.lightning_modules.MILLitModule
+    ################
+
+    model: ${model_dict.${model_type}}
+    ################
+
+    loss :
+      _target_: torch.nn.CrossEntropyLoss
+    ################
+  
+    optimizer:
+      _target_: torch.optim.Adam
+      _partial_: True
+      lr: 0.0001
+      weight_decay: 0.00001
+    ################
+
+    lr_scheduler:
+      scheduler:
+        _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+        _partial_: True
+        mode: "min"
+        factor: 0.1
+        patience: 5
+        verbose: True
+      monitor: val/loss
+
+    #################################
+    ### Clam Instance loss params ###
+    #################################
+    use_instance_loss: False
+    
+    k_sample: 8
+    bag_loss_weight: 0.7 # Disregarded if use_instance_loss: False
+    subtyping: True
+    instance_loss_fn:
+        _target_: torch.nn.CrossEntropyLoss
+
+
+  datamodule_params:
+    batch_size: 4
+    num_workers: 8 
+    shuffle: True
+
+  
+  callbacks:
+    ################
+
+    model_checkpoint:
+      _target_: pytorch_lightning.callbacks.ModelCheckpoint
+      dirpath: ${results_dir}/checkpoints
+      filename: "best"
+      monitor: "val_BinaryAccuracy"
+      mode: "max"
+      save_last: True
+      auto_insert_metric_name: False
+    ################
+
+    lr_monitor:
+      _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    ################
+
+    early_stopping:
+      _target_: pytorch_lightning.callbacks.EarlyStopping
+      monitor: "val_BinaryAccuracy"
+      patience: 10
+      mode: "max"
+      check_finite: True
+
+  trainer: 
+    _target_: pytorch_lightning.Trainer
+    default_root_dir: ${results_dir}
+    max_epochs: 2
+    accelerator: gpu
+    strategy: ddp
+    precision: '16-mixed'
+    # For some reason ddp + sanity_val_steps breaks lightning
+    # Change to >0 when working on single gpu
+    num_sanity_val_steps: 0
+    overfit_batches: 1
+
+    logger: 
+      _target_: romil.lightning_utils.MLFlowLoggerCheckpointer
+      prefix: "" 
+      experiment_name: ${exp_name}
+      tracking_uri: ${hydra:runtime.cwd}/data/mlflow
+      run_id:
+
+
+k_folds:
+  k_start: 0
+  k_end: 10

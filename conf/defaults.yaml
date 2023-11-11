@@ -1,0 +1,44 @@
+defaults:
+  - _self_
+  
+hydra:
+  run:
+    dir: ${results_dir}
+  sweep:
+    dir: data/results/${task}/${exp_name}/multirun
+    subdir: ${hydra.job.override_dirname}
+
+features_dir: ${hydra:runtime.cwd}/data/features
+split_dir: ${hydra:runtime.cwd}/data/splits
+seed: 1
+
+
+# Parameters copied from CLAM code
+task_1_tumor_vs_normal:
+  n_classes: 3
+  MIL_Dataset:
+    _target_: datasets.dataset_generic.Generic_MIL_Dataset
+    csv_path: ${hydra:runtime.cwd}/dataset_csv/tumor_vs_normal_dummy_clean.csv
+    data_dir: ${features_dir}
+    shuffle: False
+    seed: ${seed}
+    print_info: True
+    label_dict: {"normal_tissue": 0, "tumor_tissue": 1}
+    patient_strat: False
+    ignore: []
+
+
+task_2_tumor_subtyping:
+  n_classes: 2
+  MIL_Dataset:
+    _target_: datasets.dataset_generic.Generic_MIL_Dataset
+    csv_path: ${features_dir}/slides.csv
+    data_dir: ${features_dir}
+    shuffle: False
+    seed: ${seed}
+    print_info: True
+    label_dict: {"LUAD": 0, "LUSC": 1}
+    patient_strat: False
+    ignore: []
+    h5_folder: 'h5_files_grid'
+
